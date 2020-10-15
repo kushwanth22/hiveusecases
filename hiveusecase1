@@ -2,7 +2,7 @@
 mkdir /home/hduser/hiveusecase
 Download from the link "inceptez.in -> more -> HIVE REALTIME USECASES FOR INTERVIEW PREPARATION -> Click here to download the data files for the usecases given below" the custpayments_ORIG.sql and payments.txt into /home/hduser/hiveusecase
 2. Ensure Hadoop, MYSQL, Hive remote metastore is running.
-Usecase 1: **********
+Usecase 1: *********
 1. Login to Mysql and execute the sql file to load the custpayments table: source /home/hduser/hiveusecase/custpayments_ORIG.sql
 2. Write sqoop command to import data from customerpayments table with 2 mappers, with enclosed by " (As we have ',' in the data itself we are importing in sqoop using --enclosed-by option into the location /user/hduser/custpayments).
 
