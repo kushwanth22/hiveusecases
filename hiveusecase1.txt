@@ -1,6 +1,6 @@
 1. Create a usecase dir
 mkdir /home/hduser/hiveusecase
-custpayments_ORIG.sql and payments.txt into /home/hduser/hiveusecase
+copied custpayments_ORIG.sql and payments.txt into /home/hduser/hiveusecase location
 
 2. Ensure Hadoop, MYSQL, Hive remote metastore is running.
 
@@ -9,13 +9,28 @@ Usecase 1:
 
 1. Login to Mysql and execute the sql file to load the custpayments table:
 source /home/hduser/hiveusecase/custpayments_ORIG.sql
+
 2. Write sqoop command to import data from customerpayments table with 2 mappers, with enclosed
 by " (As we have ',' in the data itself we are importing in sqoop using --enclosed-by option into the
 location /user/hduser/custpayments).
 
+splitby col better choose with high cardinal col -> in this case customernumber is unique
+and more distinct. analyze records in mysql customers table for high cardinal col.
+sqoop import --connect jdbc:mysql://localhost/custpayments --username root --password root \
+-table customers -m 2 --split-by customernumber --target-dir /user/hduser/custpayments \
+--delete-target-dir --as-textfile --enclosed-by '\"';
+
+(or) since the source table customers in mysql has primay key as customernumber we no need to specify
+the split-by colname as customernumber also default fileformat will be textfile
+no need to specify as-textfile
+sqoop import --connect jdbc:mysql://localhost/custpayments --username root --password root \
+-table customers -m 2 --target-dir /user/hduser/custpayments \
+--delete-target-dir --enclosed-by '\"';
+
 3. Create a hive external table and load the sqoop imported data to the hive table called custpayments.
 As we have ',' in the data itself we are using quotedchar option below with the csv serde option as given
 below as example, create the table with all columns.
+
 create external table custmaster (customerNumber int,customername string,contactlastname
 string,contactfirstname string)
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
@@ -27,6 +42,11 @@ LOCATION '/user/hduser/custpayments/';
 4. Copy the payments.txt into hdfs location /user/hduser/paymentsdata/ and Create an external table
 namely payments with customernumber, checknumber, paymentdate, amount columns to point the
 imported payments data.
+
+hadoop fs -copyFromLocal -f /home/hduser/hiveusecase/payments.txt /user/hduser/paymentsdata/
+(or)
+hadoop fs -put -f /home/hduser/hiveusecase/payments.txt /user/hduser/paymentsdata/
+
 
 5. Create an external table called cust_payments in avro format and load data by doing inner join of
 custmaster and payments tables, using insert select customernumber,
