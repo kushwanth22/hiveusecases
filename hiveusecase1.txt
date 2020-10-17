@@ -76,12 +76,42 @@ on c.customernumber = p.customernumber;
 6. Create a view called custpayments_vw to only display customernumber,creditlimit,paymentdate and
 amount selected from cust_payments.
 
+create view custpayments_vw as select customernumber,creditlimit,paymentdate,amount from cust_payments;
+
+
 7. Extract only customernumber,creditlimit,paymentdate and amount columns either using the above
 view/cust_payments table into hdfs location /user/hduser/custpaymentsexport with '|' delimiter.
+
+create external table custpaymentsexport(customernumber int,creditlimit float,paymentdate string,amount float)
+row format delimited fields terminated by '|'
+lines terminated by '\n'
+stored as textfile
+location '/user/hduser/custpaymentsexport';
+
+insert into table custpaymentsexport select customernumber,creditlimit,paymentdate,amount from custpayments_vw;
+
+(or)
+insert overwrite local directory '/home/hduser/custpaymentsexport'
+row format delimited fields terminated by '|'
+select customernumber,creditlimit,paymentdate,amount from custpayments_vw;
+
+hadoop fs -copyFromLocal -f /home/hduser/custpaymentsexport/* /user/hduser/custpaymentsexport
+
 
 8. Export the data from the /user/hduser/custpaymentsexport location to mysql table called
 cust_payments using sqoop export with staging table option using records per statement 100 and
 mappers 3.
+
+first create main table and staging table in mysql
+create table cust_payments(customernumber int(11),creditlimit decimal(10,2),paymentdate date,amount float);
+create table custpaymentsexp_stage select * from cust_payments where 1=0;
+
+sqoop export -Dsqoop.export.records.per.statement=100 \
+--connect jdbc:mysql://localhost/custpayments --username root --password root \
+--table cust_payments --export-dir custpaymentsexport \
+--fields-terminated-by '|' --lines-terminated-by '\n' --batch \
+--staging-table custpaymentsexp_stage \
+--clear-staging-table --columns customernumber,creditlimit,paymentdate,amount -m 3;
 
 Usecase 2:
 Managing Fixed Width Data:
