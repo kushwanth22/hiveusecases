@@ -60,18 +60,18 @@ custmaster and payments tables, using insert select customernumber,
 contactfirstname,contactlastname,phone, creditlimit from custmaster and paymentdate, amount
 columns from payments table
 
-select c.customernumber,c.contactfirstname,c.contactlastname,c.phone,c.creditlimit,p.paymentdate,p.amount
-from custmaster as c inner join payments as p on c.customernumber = p.customernumber;
-
-
-select * from cust_payments as c inner join payments as p on c.custno = p.customernumber;
-
 create external table cust_payments(customernumber int,contactfirstname string,
 contactlastname string,phone string,creditlimit float, paymentdate string, amount float)
 row format delimited fields terminated by ','
 lines terminated by '\n'
 stored as avro;
 
+insert into table cust_payments select c.customernumber,c.contactfirstname,c.contactlastname,c.phone,c.creditlimit,p.paymentdate,p.amount
+from custmaster as c inner join payments as p on c.customernumber = p.customernumber;
+(or) we no need the datatype conversion(casting)
+insert into table select int(c.customernumber),c.contactfirstname,c.contactlastname,c.phone,float(c.creditlimit),
+p.paymentdate,float(p.amount) from custmaster as c inner join payments as p
+on c.customernumber = p.customernumber;
 
 6. Create a view called custpayments_vw to only display customernumber,creditlimit,paymentdate and
 amount selected from cust_payments.
