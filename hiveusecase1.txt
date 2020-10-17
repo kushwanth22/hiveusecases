@@ -31,8 +31,9 @@ sqoop import --connect jdbc:mysql://localhost/custpayments --username root --pas
 As we have ',' in the data itself we are using quotedchar option below with the csv serde option as given
 below as example, create the table with all columns.
 
-create external table custmaster (customerNumber int,customername string,contactlastname
-string,contactfirstname string)
+create external table custmaster (customerNumber int,customername string,contactlastname string,
+contactfirstname string,phone string,addressline1 string,addressline2 string,city string,state string,
+postalcode string,country string,salesrepemployeenumber int,creditlimit float)
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
 WITH SERDEPROPERTIES (
 "separatorChar" = ",",
@@ -47,11 +48,30 @@ hadoop fs -copyFromLocal -f /home/hduser/hiveusecase/payments.txt /user/hduser/p
 (or)
 hadoop fs -put -f /home/hduser/hiveusecase/payments.txt /user/hduser/paymentsdata/
 
+create external table payments(customernumber int,checknumber string, paymentdate string,amount float)
+row format delimited
+fields terminated by ','
+lines terminated by '\n'
+stored as textfile
+location '/user/hduser/paymentsdata/';
 
 5. Create an external table called cust_payments in avro format and load data by doing inner join of
 custmaster and payments tables, using insert select customernumber,
 contactfirstname,contactlastname,phone, creditlimit from custmaster and paymentdate, amount
 columns from payments table
+
+select c.customernumber,c.contactfirstname,c.contactlastname,c.phone,c.creditlimit,p.paymentdate,p.amount
+from custmaster as c inner join payments as p on c.customernumber = p.customernumber;
+
+
+select * from cust_payments as c inner join payments as p on c.custno = p.customernumber;
+
+create external table cust_payments(customernumber int,contactfirstname string,
+contactlastname string,phone string,creditlimit float, paymentdate string, amount float)
+row format delimited fields terminated by ','
+lines terminated by '\n'
+stored as avro;
+
 
 6. Create a view called custpayments_vw to only display customernumber,creditlimit,paymentdate and
 amount selected from cust_payments.
