@@ -167,21 +167,39 @@ sqoop export --connect "jdbc:mysql://localhost/custpayments" --username root --p
 4. Load only chennai data to another table called cust_parsed_orc of type orc format partitioned based
 on dt.
 
+-since we used partitioned by don't include partition column while creating a table
+create table cust_parsed_orc(id int,name string,city string,age int,amt int)
+partitioned by(dt string)
+row format delimited fields terminated by ','
+lines terminated by '\n'
+stored as orcfile;
+
+-in dynamic partition specify partition col dt at the last
+where as in static partition no need to specify the partition col in insert select statement
+insert into cust_parsed_orc partition(dt)
+select id,name,city,age,amt,dt from cust_delimited_parsed_temp where city = 'chennai';
+
 5. Create a json table called cust_parsed_json (to load into json use the following steps).
 
 cd /home/hduser/hiveusecase
 
-wget https://repo1.maven.org/maven2/org/apache/hive/hcatalog/hive-hcatalog-core/1.2.1/hive-
-hcatalog-core-1.2.1.jar
+wget https://repo1.maven.org/maven2/org/apache/hive/hcatalog/hive-hcatalog-core/1.2.1/hive-hcatalog-core-1.2.1.jar
 
+-in hive terminal
 add jar /home/hduser/hiveusecase/hive-hcatalog-core-1.2.1.jar;
 create external table cust_parsed_json(id int, name string,city string, age int)
 ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 stored as textfile
 location '/user/hduser/custjson';
 
+to verify added jars in hive
+>list jars
+
 6. Insert into the cust_parsed_json only non chennai data using insert select of id,name,city, age from
 the cust_delimited_parsed_temp table.
+
+insert into cust_parsed_json select id,name,city,age from cust_delimited_parsed_temp
+where city!='chennai';
 
 7. Schema migration:
 Convert the XML table called xml_bank created in the actual usecase to JSON data by the same way like
@@ -194,6 +212,15 @@ stored as textfile
 location '/user/hduser/custxmljson'
 as select * from xml_bank;
 
+add jar /home/hduser/hiveusecase/hivexmlserde-1.0.5.3.jar;
+create table xml_json(customer_id string, income bigint,demographics map<string,string>, financial map<string,string>)
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
+stored as textfile
+location '/user/hduser/custxmljson';
+
+insert into xml_json select * from xml_bank;
+
+
 8. Import data from mysql directly creating static partition based on city=chennai as given below for
 additional knowledge.
 
@@ -201,9 +228,8 @@ sqoop import \
 --connect jdbc:mysql://localhost:3306/custdb \
 --username root \
 --password root \
-
 --query "select custid,firstname,age from customer where city='chennai' and \$CONDITIONS" \
---target-dir /user/hduser/hiveext/ \
+--target-dir /user/hduser/hiveext \
 --split-by custid \
 --hive-overwrite \
 --hive-import \
