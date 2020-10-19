@@ -211,14 +211,23 @@ ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 stored as textfile
 location '/user/hduser/custxmljson'
 as select * from xml_bank;
-
+Solution:
 add jar /home/hduser/hiveusecase/hivexmlserde-1.0.5.3.jar;
-create table xml_json(customer_id string, income bigint,demographics map<string,string>, financial map<string,string>)
+create external table xml_json(customer_id string, income bigint,demographics map<string,string>, financial map<string,string>)
 ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
 stored as textfile
 location '/user/hduser/custxmljson';
 
 insert into xml_json select * from xml_bank;
+(or)
+- we can create only managed tables with CTAS
+create table xml_json2
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
+stored as textfile
+location '/user/hduser/custxmljson2'
+as select * from xml_bank;
+
+
 
 
 8. Import data from mysql directly creating static partition based on city=chennai as given below for
